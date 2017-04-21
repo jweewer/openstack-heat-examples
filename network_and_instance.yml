@@ -1,0 +1,85 @@
+heat_template_version: 2017-02-24
+description: Network based upon basic_network.yml, it will also spawn an instance using the test cirros image 
+
+parameters:
+  private_network_name:
+    type: string
+    description: The name of the private network
+    default: private_net
+
+  private_subnet_name:
+    type: string
+    description: The name of the private subnet
+    default: private_subnet
+
+  external_network_name:
+    type: string
+    description: The name of the external network
+    default: external
+
+  router_name:
+    type: string
+    description: The name of the router
+    default: router1
+
+  instance_name:
+    type: string
+    description: The default name of the instance
+    default: testinstance
+
+  image_name:
+    type: string
+    description: The image name that will be used
+    default: cirros
+
+  flavor:
+    type: string
+    description: The flavor that will be used
+    default: m1.tiny
+
+resources:
+  private_network:
+    type: OS::Neutron::Net
+    properties:
+      name: { get_param: private_network_name }
+
+  private_network_sub:
+    type: OS::Neutron::Subnet
+    properties:
+      name : { get_param: private_subnet_name }
+      network_id: { get_resource: private_network }
+      cidr: 192.168.10.0/24
+      gateway_ip: 192.168.10.1
+
+  private_net_port1:
+    type: OS::Neutron::Port
+    description: Network Port for instance1
+    properties:
+      network_id: { get_resource: private_network }
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      name: { get_param: router_name }
+      external_gateway_info:
+        network: { get_param: external_network_name }
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: private_network_sub }
+
+  instance1:
+    type: OS::Nova::Server
+    properties:
+      image: { get_param: image_name }
+      flavor: { get_param: flavor }
+      networks: 
+        - port: { get_resource: private_net_port1 } 
+      name: { get_param: instance_name }
+
+outputs:
+  instance_ip_address:
+    description: The internal IP address of the deployed instance
+    value: { get_attr: [instance1, first_address] } 

@@ -1,0 +1,20 @@
+heat_template_version: 2017-02-24
+description: Just a simple template to build a cinder block storage.
+
+parameters:
+  cinder_block_name:
+    type: string
+    description: The default cinder block name
+    default: cinder1
+
+  cinder_block_size:
+    type: number
+    description: The size of the cinder block, only use integers
+    default: 1
+
+resources:
+  cinder_storage1:
+    type: OS::Cinder::Volume
+    properties: 
+      name: { get_param: cinder_block_name }
+      size: { get_param: cinder_block_size }
