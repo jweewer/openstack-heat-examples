@@ -6,6 +6,11 @@ parameters:
     type: string
     description: Name of available keypair
 
+  ext_network:
+    type: string
+    description: Name of the external network
+    default: external
+
 resources:
   instance:
     type: OS::Nova::Server
@@ -24,7 +29,7 @@ resources:
     properties:
       name: router1
       external_gateway_info:
-        network: external
+        network: { get_param: ext_network }
 
   internal_network:
     type: OS::Neutron::Net
@@ -50,44 +55,32 @@ resources:
     type: OS::Neutron::Port
     properties:
       network_id: { get_resource: internal_network }
-      security_groups: [ { get_resource: mysql_security_group }, { get_resource: icmp_security_group }, { get_resource: ssh_security_group } ]  
+      security_groups: [ { get_resource: mysql_security_group } ]  
 
   floatingip:
     type: OS::Neutron::FloatingIP
     properties:
-      floating_network: external
+      floating_network: { get_param: ext_network 
       port_id: { get_resource: network_port_instance }
     
   mysql_security_group:
     type: OS::Neutron::SecurityGroup
     properties:
-      name: MySQL Rules
+      name: Access Rules MySQL
       rules:
       - protocol: tcp
         remote_ip_prefix: 0.0.0.0/0
         direction: ingress
         port_range_min: 3306
         port_range_max: 3306
-
-  ssh_security_group:
-    type: OS::Neutron::SecurityGroup
-    properties:
-      name: SSH Rules
-      rules:
       - protocol: tcp
         remote_ip_prefix: 0.0.0.0/0
         direction: ingress
         port_range_min: 22
         port_range_max: 22
-
-  icmp_security_group:
-    type: OS::Neutron::SecurityGroup
-    properties:
-      name: Allow all ICMP
-      rules:
-        - protocol: icmp
-          remote_ip_prefix: 0.0.0.0/0
-          direction: ingress   
+      - protocol: icmp
+        remote_ip_prefix: 0.0.0.0/0
+        direction: ingress   
 
 #### End network part
 
@@ -128,4 +121,4 @@ resources:
 outputs:
   mysql_initial_password:
     description: Initial MySQL root password
-    value: { get_attr: [ mysqlpassword, value ] } 
+    value: { get_attr: [ mysqlpassword,value  ] } 
