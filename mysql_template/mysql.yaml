@@ -1,13 +1,18 @@
 heat_template_version: 2017-02-24
 description: Fully automated installation of a debian image with a mysql database server
 
+parameters:
+  keyname:
+    type: string
+    description: Name of available keypair
+
 resources:
   instance:
     type: OS::Nova::Server
     properties:
       image: debian
       flavor: m2.small
-      key_name: jacques
+      key_name: { get_param: keyname }
       networks:
         - port: { get_resource: network_port_instance }
 
