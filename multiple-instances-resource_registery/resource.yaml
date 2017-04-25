@@ -1,0 +1,14 @@
+heat_template_version: 2017-02-24
+description: Deploy multiple instances from server.yml
+
+resources:
+  resourcegroup0:
+    type: OS::Heat::ResourceGroup
+    properties:
+      count: 2
+      resource_def:
+#        type: server.yaml 
+        type: My::Server::Volumes
+#        properties:
+#          name: test-%index%
+
