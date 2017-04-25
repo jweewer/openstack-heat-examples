@@ -60,7 +60,7 @@ resources:
   floatingip:
     type: OS::Neutron::FloatingIP
     properties:
-      floating_network: { get_param: ext_network 
+      floating_network: { get_param: ext_network } 
       port_id: { get_resource: network_port_instance }
     
   mysql_security_group:
