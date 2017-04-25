@@ -1,0 +1,83 @@
+heat_template_version: 2017-02-24
+description: Fully automated installation of a debian image with a mysql database server
+
+resources:
+  instance:
+    type: OS::Nova::Server
+    properties:
+      image: debian
+      flavor: m2.small
+      key_name: jacques
+      networks:
+        - port: { get_resource: network_port_instance }
+
+#### Network part
+  router1:
+    type: OS::Neutron::Router
+    properties:
+      name: router1
+      external_gateway_info:
+        network: external
+
+  internal_network:
+    type: OS::Neutron::Net
+    properties:
+      name: internal_net
+
+  internal_subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: internal_subnet
+      network_id: { get_resource: internal_network }
+      cidr: 192.168.20.0/24
+      gateway_ip: 192.168.20.1
+      dns_nameservers: [ 8.8.8.8 ]
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router1 }
+      subnet_id: { get_resource: internal_subnet }
+
+  network_port_instance:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: internal_network }
+      security_groups: [ { get_resource: mysql_security_group }, { get_resource: icmp_security_group } ]  
+    
+  mysql_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: MySQL Rules
+      rules:
+      - protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+        direction: ingress
+        port_range_min: 3306
+        port_range_max: 3306
+
+  icmp_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: Allow all ICMP
+      rules:
+        - protocol: icmp
+          remote_ip_prefix: 0.0.0.0/0
+          direction: ingress   
+
+#### End network part
+
+#### Add volume on rbd storage ####
+  volume_block:
+    type: OS::Cinder::Volume
+    properties:
+       name: mysqldata
+       size: 1
+       volume_type: rbd_storage
+
+  volume_block_attach:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      volume_id: { get_resource: volume_block }
+      instance_id: { get_resource: instance } 
+#### End volume attachment ####
