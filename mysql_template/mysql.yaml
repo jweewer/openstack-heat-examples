@@ -15,6 +15,8 @@ resources:
       key_name: { get_param: keyname }
       networks:
         - port: { get_resource: network_port_instance }
+      user_data: { get_resource: my_config }
+      user_data_format: RAW
 
 #### Network part
   router1:
@@ -48,7 +50,13 @@ resources:
     type: OS::Neutron::Port
     properties:
       network_id: { get_resource: internal_network }
-      security_groups: [ { get_resource: mysql_security_group }, { get_resource: icmp_security_group } ]  
+      security_groups: [ { get_resource: mysql_security_group }, { get_resource: icmp_security_group }, { get_resource: ssh_security_group } ]  
+
+  floatingip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: external
+      port_id: { get_resource: network_port_instance }
     
   mysql_security_group:
     type: OS::Neutron::SecurityGroup
@@ -60,6 +68,17 @@ resources:
         direction: ingress
         port_range_min: 3306
         port_range_max: 3306
+
+  ssh_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: SSH Rules
+      rules:
+      - protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+        direction: ingress
+        port_range_min: 22
+        port_range_max: 22
 
   icmp_security_group:
     type: OS::Neutron::SecurityGroup
@@ -84,5 +103,29 @@ resources:
     type: OS::Cinder::VolumeAttachment
     properties:
       volume_id: { get_resource: volume_block }
-      instance_id: { get_resource: instance } 
+      instance_uuid: { get_resource: instance } 
 #### End volume attachment ####
+
+#### Cloud-config ####
+  my_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        package_update: true
+        package_upgrade: true
+        packages:
+          - mysql-server
+          - mysql-client
+
+#### End config ####
+
+#### Generate password mysql server ####
+  mysqlpassword:
+    type: OS::Heat::RandomString
+    properties:
+      length: 10
+
+outputs:
+  mysql_initial_password:
+    description: Initial MySQL root password
+    value: { get_attr: [ mysqlpassword, value ] } 
