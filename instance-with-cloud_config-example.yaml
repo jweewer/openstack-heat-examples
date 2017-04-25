@@ -1,0 +1,45 @@
+heat_template_version: 2017-02-24
+description: Create an instance with a cinder volume attached
+
+
+resources:
+  myconfig:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        groups:
+        - group1
+        write_files:
+        - path: /tmp/test.txt
+          content: |
+            This is line1.
+            And line number 2
+
+  instance:
+    type: OS::Nova::Server
+    properties:
+      image: debian
+      flavor: m2.small
+      user_data: { get_resource: myconfig }
+      user_data_format: RAW
+      key_name: jacques
+      networks:
+        - port: { get_resource: network_port } 
+
+  network_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: internal
+
+  volume:
+    type: OS::Cinder::Volume
+    properties:
+      size: 1
+      volume_type: rbd_storage
+
+  volume_attach:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      volume_id: { get_resource: volume }
+      instance_uuid: { get_resource: instance }
+
