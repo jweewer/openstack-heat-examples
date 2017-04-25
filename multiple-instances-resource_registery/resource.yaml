@@ -7,8 +7,5 @@ resources:
     properties:
       count: 2
       resource_def:
-#        type: server.yaml 
         type: My::Server::Volumes
-#        properties:
-#          name: test-%index%
 
