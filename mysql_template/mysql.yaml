@@ -20,7 +20,7 @@ resources:
       key_name: { get_param: keyname }
       networks:
         - port: { get_resource: network_port_instance }
-      user_data: { get_resource: my_config }
+      user_data: { get_resource: server_init }
       user_data_format: RAW
 
 #### Network part
@@ -110,6 +110,19 @@ resources:
           - mysql-server
           - mysql-client
 
+  mysqlconfig:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: 
+        str_replace:
+          template: |
+            #!/bin/bash
+            mysqladmin -u root password $mysqlpasswd
+          params:
+            $mysqlpasswd: { get_attr: [ mysqlpassword, value ] }
+      
+
 #### End config ####
 
 #### Generate password mysql server ####
@@ -118,7 +131,14 @@ resources:
     properties:
       length: 10
 
+  server_init:
+    type: OS::Heat::MultipartMime
+    properties:
+      parts:
+      - config: { get_resource: my_config }
+      - config: { get_resource: mysqlconfig }
+
 outputs:
   mysql_initial_password:
     description: Initial MySQL root password
-    value: { get_attr: [ mysqlpassword,value  ] } 
+    value: { get_attr: [ mysqlpassword, value  ] } 
