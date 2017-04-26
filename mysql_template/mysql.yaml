@@ -11,6 +11,28 @@ parameters:
     description: Name of the external network
     default: external
 
+  int_network:
+    type: string
+    description: Name of the internal network
+    default: internal
+
+  int_subnet_name:
+    type: string
+    description: Name of the subnet for the internal network
+    default: internal_subnet
+
+  router_name:
+    type: string
+    description: Name for the router in this network
+    default: router1
+
+  cinder_volume_size:
+    type: number
+    description: Size of the cinder volume
+    default: 1
+    contraints:
+      - range: { min: 1, max: 5 }
+
 resources:
   instance:
     type: OS::Nova::Server
@@ -27,19 +49,19 @@ resources:
   router1:
     type: OS::Neutron::Router
     properties:
-      name: router1
+      name: { get_param: router_name }
       external_gateway_info:
         network: { get_param: ext_network }
 
   internal_network:
     type: OS::Neutron::Net
     properties:
-      name: internal_net
+      name: { get_param: int_network } 
 
   internal_subnet:
     type: OS::Neutron::Subnet
     properties:
-      name: internal_subnet
+      name: { get_param: int_subnet_name }
       network_id: { get_resource: internal_network }
       cidr: 192.168.20.0/24
       gateway_ip: 192.168.20.1
@@ -89,7 +111,7 @@ resources:
     type: OS::Cinder::Volume
     properties:
        name: mysqldata
-       size: 1
+       size: { get_param: cinder_volume_size } 
        volume_type: rbd_storage
 
   volume_block_attach:
