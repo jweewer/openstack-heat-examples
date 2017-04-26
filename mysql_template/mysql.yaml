@@ -30,7 +30,7 @@ parameters:
     type: number
     description: Size of the cinder volume
     default: 1
-    contraints:
+    constraints:
       - range: { min: 1, max: 5 }
 
 resources:
